@@ -1,8 +1,7 @@
 USE master;
 GO
 
-IF DB_ID (N'traveller') IS NOT NULL
-DROP DATABASE traveller;
+DROP DATABASE IF EXISTS traveller;
 GO
 CREATE DATABASE traveller;
 GO
@@ -36,7 +35,8 @@ IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'clients_info')
 		address VARCHAR(64),
 		preferences VARCHAR(20),
 		CONSTRAINT FK_clients_info FOREIGN KEY (client_code)
-		REFERENCES clients(client_code)
+		REFERENCES clients(client_code),
+		CHECK (preferences = 'adults only' OR preferences = 'kids only' OR preferences = 'family friendly')
 	)
 GO
 
@@ -45,7 +45,7 @@ IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'employees')
 		employee_code INT IDENTITY(1,1) NOT NULL,
 		first_name VARCHAR(64) NOT NULL,
 		last_name VARCHAR(64) NOT NULL,
-		IBAN INT NOT NULL,
+		IBAN VARCHAR(30) NOT NULL,
 		address VARCHAR(64) NOT NULL,
 		PRIMARY KEY (employee_code)
 	)
@@ -59,14 +59,16 @@ IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'trips')
 		category VARCHAR(20),
 		price DECIMAL(10,2) NOT NULL,
 		leader_code INT NOT NULL,
-		start_date DATE NOT NULL,
-		end_date DATE NOT NULL,
+		start_date_trip DATE NOT NULL,
+		end_date_trip DATE NOT NULL,
 		actual_amount INT,
 		max_amount INT,
-		description VARCHAR(250),
+		description VARCHAR(400),
 		PRIMARY KEY (trip_code),
 		CONSTRAINT FK_trips_workers FOREIGN KEY (leader_code)
-		REFERENCES employees(employee_code)
+		REFERENCES employees(employee_code),
+		CHECK (category = 'adults only' OR category = 'kids only' OR category = 'family friendly'),
+		CHECK (start_date_trip < end_date_trip)
 	)
 GO
 
@@ -81,14 +83,15 @@ IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'payments')
 		CONSTRAINT FK_payments_client FOREIGN KEY (client_code)
 		REFERENCES clients(client_code),
 		CONSTRAINT FK_payments_trip FOREIGN KEY (trip_code)
-		REFERENCES trips(trip_code)
+		REFERENCES trips(trip_code),
+		CHECK (progress = 'paid' OR progress = 'excess payment' OR progress = 'underpayment')
 	)
 GO
 
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'branches')
 	CREATE TABLE branches (
 		branch_code INT IDENTITY(1,1) NOT NULL,
-		address VARCHAR(40)
+		address VARCHAR(50)
 		PRIMARY KEY (branch_code)
 	)
 GO
